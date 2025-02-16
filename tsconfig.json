@@ -10,9 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./src",
     "paths": {
-      // "@controllers/*": ["controllers/*"],
-      // "@routes/*": ["routes/*"],
-      // "@types/*": ["types/*"],
       "@*": ["*"]
     },
   },
