@@ -1,5 +1,5 @@
 {
-  "name": "nba-everything",
+  "name": "nba-everything-api",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -23,6 +23,6 @@
   "scripts": {
     "build": "tsc",
     "dev": "nodemon src/server.ts",
-    "start": "node dist/server.js"
+    "start": "node src/server.js"
   }
 }
