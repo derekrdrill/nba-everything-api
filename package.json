@@ -24,6 +24,6 @@
   "scripts": {
     "build": "tsc && tsc-alias",
     "dev": "nodemon src/server.ts",
-    "start": "node dist/server.js"
+    "start": "ts-node dist/server.js"
   }
 }
