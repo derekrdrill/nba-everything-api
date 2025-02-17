@@ -7,7 +7,7 @@ const ballDontLie = useBallDontLieApi();
 const getTeams = async (req: Request, res: Response) => {
   try {
     const teams: ApiResponse<NBATeam[]> = await ballDontLie.nba.getTeams();
-    res.json(teams);
+    return teams;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -20,7 +20,7 @@ const getTeamsCurrent = async (req: Request, res: Response) => {
       data: teams.data.filter((team) => team.conference === 'East' || team.conference === 'West'),
     };
 
-    res.json(currentTeams);
+    return currentTeams;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
