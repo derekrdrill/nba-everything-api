@@ -63,7 +63,7 @@ const getGame = async (req: Request, res: Response) => {
       },
     };
 
-    res.json({ data: gameData });
+    return { data: gameData };
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

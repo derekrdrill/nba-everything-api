@@ -14,7 +14,7 @@ const getGamesByTeam = async (req: Request, res: Response) => {
       team_ids: [teamId],
     });
 
-    res.json(games);
+    return games;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -99,7 +99,7 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
 
     const gamesData = { gameData: gameDataWithWins, ppg, rpg, apg, spg, bpg, wins, losses };
 
-    res.json({ data: gamesData });
+    return { data: gamesData };
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
