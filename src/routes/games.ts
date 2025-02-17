@@ -8,9 +8,6 @@ router.get('/:teamId', checkCache, async (req, res) => {
   const key = req.originalUrl;
   const data = await getGamesByTeam(req, res);
 
-  // memcached.set(key, data, 60, (err) => {
-  //   if (err) console.error(err);
-  // });
   memcached.set(key, JSON.stringify(data), { expires: 60 }, (err) => {
     if (err) console.error;
   });
