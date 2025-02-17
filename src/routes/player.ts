@@ -8,8 +8,12 @@ router.get('/:playerId', checkCache, async (req, res) => {
   const key = req.originalUrl;
   const data = await getPlayer(req, res);
 
-  memcached.set(key, data, 60, (err) => {
-    if (err) console.error(err);
+  // memcached.set(key, data, 60, (err) => {
+  //   if (err) console.error(err);
+  // });
+
+  memcached.set(key, JSON.stringify(data), { expires: 60 }, (err) => {
+    if (err) console.error;
   });
 
   res.json(data);
@@ -18,9 +22,15 @@ router.get('/:playerId', checkCache, async (req, res) => {
 router.get('/:playerId/stats/:season', checkCache, async (req, res) => {
   const key = req.originalUrl;
   const data = await getPlayerSeasonStats(req, res);
-  memcached.set(key, data, 60, (err) => {
-    if (err) console.error(err);
+
+  // memcached.set(key, data, 60, (err) => {
+  //   if (err) console.error(err);
+  // });
+
+  memcached.set(key, JSON.stringify(data), { expires: 60 }, (err) => {
+    if (err) console.error;
   });
+
   res.json(data);
 });
 

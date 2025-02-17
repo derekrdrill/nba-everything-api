@@ -136,6 +136,13 @@
   dependencies:
     "@types/node" "*"
 
+"@types/memjs@^1.3.3":
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/@types/memjs/-/memjs-1.3.3.tgz#d0c2f76d4b663db05ea9c419e8ed8f568787d285"
+  integrity sha512-OqZuZ2T0ErrygA/WUqQjmsB1GpxAt84OCgKPKbsSWwYKA/oe/lTiqvqMgFOv/Ngl8p+nytgdhrdxJtikOgimCg==
+  dependencies:
+    "@types/node" "*"
+
 "@types/mime@^1":
   version "1.3.5"
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-1.3.5.tgz#1ef302e01cf7d2b5a0fa526790c9123bf1d06690"
@@ -783,6 +790,11 @@ memcached@^2.2.2:
   dependencies:
     hashring "3.2.x"
     jackpot ">=0.0.6"
+
+memjs@^1.3.2:
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/memjs/-/memjs-1.3.2.tgz#0b6229bddba00162d1e281ed454217435c4968b3"
+  integrity sha512-qUEg2g8vxPe+zPn09KidjIStHPtoBO8Cttm8bgJFWWabbsjQ9Av9Ky+6UcvKx6ue0LLb/LEhtcyQpRyKfzeXcg==
 
 memory-pager@^1.0.2:
   version "1.5.0"
