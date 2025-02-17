@@ -11,7 +11,7 @@ const getPlayer = async (req: Request, res: Response) => {
   try {
     const playerId = Number(req.params.playerId);
     const player = await ballDontLie.nba.getPlayer(playerId);
-    res.json(player);
+    return player;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -68,7 +68,7 @@ const getPlayerSeasonStats = async (req: Request, res: Response) => {
       stat: 'turnover',
     });
 
-    res.json({
+    return {
       data: {
         player: playerGameStatsBySeasonData[0].player,
         ppg,
@@ -78,7 +78,7 @@ const getPlayerSeasonStats = async (req: Request, res: Response) => {
         bpg,
         topg,
       },
-    });
+    };
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
