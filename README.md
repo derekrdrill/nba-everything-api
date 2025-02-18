@@ -1,10 +1,10 @@
 # NBA Everything API
 
-A powerful API of NBA data, designed to drive the functionality of the NBAyyyy app: {add url here}
+A powerful API of NBA data, designed to drive the functionality of the NBA everything web app: 
+- Repository: https://github.com/derekrdrill/nba-everything
+- URL: _Production URL coming soon_
 
-<br />
-<hr />
-<br />
+<br>
 
 ## Data
 
@@ -35,9 +35,7 @@ Things such as:
 
 And endless other NBA data could all potentially be pulled into some of the NBA Everything API endpoints with AI
 
-<br />
-<hr />
-<br />
+<br>
 
 ## Stack
 
@@ -45,10 +43,17 @@ And endless other NBA data could all potentially be pulled into some of the NBA 
 - Express JS
 - TypeScript
 - [Ball Don't Lie SDK](https://github.com/balldontlie-api/typescript)
+- [MemJS](https://github.com/memcachier/memjs)
 
-<br />
-<hr />
-<br />
+<br>
+
+## Caching
+
+[Memcachier](https://www.memcachier.com/), [Heroku](https://devcenter.heroku.com/articles/memcachier), and [MemJS](https://github.com/memcachier/memjs) are utilized together to cache the data of these endpoints
+
+
+
+<br>
 
 ## Deployments and URL
 
@@ -56,50 +61,48 @@ This API is deployed on a Heroku server
 
 To access this API use this URL: https://nba-everything-api-5349aa93ce8d.herokuapp.com
 
-<br />
-<hr />
-<br />
+<br>
 
 ## Endpoints
 
 Listed below are all available endpoints (data contracts will be added to this documentation soon)
 
-- ### Game
+### Game
 
-  #### Game by Game ID
+#### Game by Game ID
 
-        /game/:gameId
+      /game/:gameId
 
-- ### Games
+### Games
 
-  #### Games by Team ID
+#### Games by Team ID
 
-        /games/:teamId
+      /games/:teamId
 
-  #### Games by Team ID and Season
+#### Games by Team ID and Season
 
-        /games/:teamId/:season
+      /games/:teamId/:season
 
-- ### Player
+### Player
 
-  #### Player by Player ID
+#### Player by Player ID
 
-        /player/:playerId
+      /player/:playerId
 
-  #### Player Season Stats by Player ID and Season
+#### Player Season Stats by Player ID and Season
 
-        /player/:playerId/stats/:season
+      /player/:playerId/stats/:season
 
-  #### Player Career Stats by Player ID
+#### Player Career Stats by Player ID
 
-        /player/:playerId/stats/career
+      /player/:playerId/stats/career
 
-- ### Teams
+### Teams
 
-  #### All teams
+#### All teams
 
-        /teams
+      /teams
 
-  #### All current teams
+#### All current teams
 
-        /teams/current
+      /teams/current
