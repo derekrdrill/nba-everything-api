@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 8080;
 const urlItems = [
   'nba-everything.netlify.app',
   'nba-everything.netlify-dev.app',
-  'drill-development.vercel.app',
+  'nba-everything-git-',
+  'nba-everything-',
   'localhost:1217',
 ];
 
