@@ -1,16 +1,47 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import path from 'path';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.use(cors());
-app.use(express.json());
+const urlItems = [
+  'nba-everything.netlify.app',
+  'nba-everything.netlify-dev.app',
+  'drill-development.vercel.app',
+  'localhost:1217',
+];
 
+interface CorsOptions {
+  origin: (
+    origin?: string | undefined,
+    callback?: (err: Error | null, allow?: boolean) => void,
+  ) => void;
+  methods: string;
+  allowedHeaders: string;
+  credentials: boolean;
+}
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (callback) {
+      if (!origin) return callback(null, true);
+      if (urlItems.some((item) => origin.includes(item))) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  methods: 'GET,POST',
+  allowedHeaders: 'Content-Type,Authorization',
+  credentials: true,
+};
+
+app.use(express.json());
+app.use(cors(corsOptions));
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
