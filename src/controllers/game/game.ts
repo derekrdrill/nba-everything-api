@@ -52,7 +52,7 @@ const getGame = async (req: Request, res: Response) => {
         score: homeTeamStats[0].game.home_team_score,
         statLeaders: homeTeamStatLeaders,
       },
-      vistorTeam: {
+      visitorTeam: {
         abbrName: visitorTeamStats[0].team.abbreviation,
         boxScoreData: visitorTeamBoxScore,
         boxScoreDataShort: visitorTeamBoxScoreShort,
