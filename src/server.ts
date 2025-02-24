@@ -8,8 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 const urlItems = [
-  'nba-everything.netlify.app',
-  'nba-everything.netlify-dev.app',
+  'nba-everything.vercel.app',
+  'nba-everything-dev.vercel.app',
   'nba-everything-git-',
   'nba-everything-',
   'localhost:1217',
