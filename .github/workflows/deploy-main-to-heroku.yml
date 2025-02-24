@@ -1,4 +1,4 @@
-name: Deploy to Heroku - Development
+name: Deploy to Heroku - Production
 
 on:
   push:
