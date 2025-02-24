@@ -1,4 +1,4 @@
-name: Deploy to Heroku - Production
+name: Deploy to Heroku - Development
 
 on:
   push:
@@ -19,11 +19,9 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Log in to Heroku
-        run: |
-          heroku auth:token --api-key ${{ secrets.NBA_EVERYTHING_API_HEROKU_KEY }}
-
-      - name: Deploy to Heroku
-        run: |
-          git checkout main
-          git push heroku main
+      - name: Login to Heroku
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.NBA_EVERYTHING_API_HEROKU_KEY }}
+          heroku_email: ${{ secrets.NBA_EVERYTHING_API_HEROKU_EMAIL }}
+          heroku_app_name: ${{ secrets.NBA_EVERYTHING_API_HEROKU_APP_NAME }}
