@@ -27,5 +27,5 @@ jobs:
 
       - name: Deploy to Heroku
         run: |
-          heroku git:remote -a nba-everything-api-development -r nba-everything-api-development 
-          git push nba-everything-api-development development:main
+          git remote add heroku "https://git.heroku.com/nba-everything-api-development.git"
+          git push heroku development:main
