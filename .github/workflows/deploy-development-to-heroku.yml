@@ -25,10 +25,7 @@ jobs:
         run: |
           echo $NBA_EVERYTHING_API_HEROKU_KEY | heroku auth:token
 
-      - name: Add Heroku remote
-        run: |
-          git remote add heroku https://git.heroku.com/nba-everything-api-development.git
-
       - name: Deploy to Heroku
         run: |
-          git push heroku development:main
+          heroku git:remote -a nba-everything-api-development -r nba-everything-api-development 
+          git push nba-everything-api-development development:main
