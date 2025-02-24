@@ -20,8 +20,10 @@ jobs:
           curl https://cli-assets.heroku.com/install.sh | sh
 
       - name: Log in to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.NBA_EVERYTHING_API_HEROKU_KEY }}
         run: |
-          heroku auth:token --api-key ${{ secrets.NBA_EVERYTHING_API_HEROKU_KEY }}
+          echo $NBA_EVERYTHING_API_HEROKU_KEY | heroku auth:token
 
       - name: Deploy to Heroku
         run: |
