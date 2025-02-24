@@ -1,0 +1,29 @@
+name: Deploy to Heroku - Development
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.NBA_EVERYTHING_API_GH_ACTION }}
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Log in to Heroku
+        run: |
+          heroku auth:token --api-key ${{ secrets.NBA_EVERYTHING_API_HEROKU_KEY }}
+
+      - name: Deploy to Heroku
+        run: |
+          git checkout development
+          git push development development:main
