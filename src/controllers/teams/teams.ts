@@ -75,6 +75,7 @@ const getTeamsCurrent = async (req: Request, res: Response) => {
           tertiary: teamData?.TertiaryColor,
           quaternary: teamData?.QuaternaryColor,
         },
+        logo: teamData?.WikipediaLogoUrl,
         stadium: {
           name: teamStadium?.Name,
           address: teamStadium?.Address,
