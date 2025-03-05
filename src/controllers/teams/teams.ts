@@ -77,8 +77,10 @@ const getTeamsCurrent = async (req: Request, res: Response) => {
         },
         stadium: {
           name: teamStadium?.Name,
+          address: teamStadium?.Address,
           city: teamStadium?.City,
           state: teamStadium?.State,
+          zip: teamStadium?.Zip,
           country: teamStadium?.Country,
           capacity: teamStadium?.Capacity,
           geoLat: teamStadium?.GeoLat,
