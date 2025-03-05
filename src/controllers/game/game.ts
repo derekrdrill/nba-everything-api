@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ApiResponse, NBAStats } from '@balldontlie/sdk';
-import { useBallDontLieApi } from '@api';
+import { useBallDontLieApi, useSportsDataIOApi } from '@api';
 import {
   getGameBoxScore,
   getGameStatsById,
@@ -14,12 +14,14 @@ const getGame = async (req: Request, res: Response) => {
   const gameId = Number(req.params.gameId);
 
   try {
-    const gameStats: ApiResponse<NBAStats[]> = await ballDontLie.nba.getStats({
+    const ballDontLieGameStats: ApiResponse<NBAStats[]> = await ballDontLie.nba.getStats({
       game_ids: [gameId],
       per_page: 50,
     });
 
-    const gameStatsFull = gameStats.data;
+    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
+
+    const gameStatsFull = ballDontLieGameStats.data;
     const homeTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
     const visitorTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
     const homeTeamID = homeTeamGame.home_team_id;
@@ -41,6 +43,13 @@ const getGame = async (req: Request, res: Response) => {
     });
     const homeTeamStatLeaders = statLeadersByTeam.homeStatLeaders;
     const visitorTeamStatLeaders = statLeadersByTeam.visitorStatLeaders;
+    const homeLogo = sportsDataIOTeam.find(
+      (team) => team?.Key === homeTeamStats[0].team.abbreviation,
+    )?.WikipediaLogoUrl;
+
+    const visitorLogo = sportsDataIOTeam.find(
+      (team) => team?.Key === visitorTeamStats[0].team.abbreviation,
+    )?.WikipediaLogoUrl;
 
     const gameData = {
       homeTeam: {
@@ -49,6 +58,7 @@ const getGame = async (req: Request, res: Response) => {
         boxScoreDataShort: homeTeamBoxScoreShort,
         fullName: homeTeamStats[0].team.full_name,
         locale: 'home',
+        logo: homeLogo,
         score: homeTeamStats[0].game.home_team_score,
         statLeaders: homeTeamStatLeaders,
       },
@@ -58,6 +68,7 @@ const getGame = async (req: Request, res: Response) => {
         boxScoreDataShort: visitorTeamBoxScoreShort,
         fullName: visitorTeamStats[0].team.full_name,
         locale: 'vistor',
+        logo: visitorLogo,
         score: visitorTeamStats[0].game.visitor_team_score,
         statLeaders: visitorTeamStatLeaders,
       },
