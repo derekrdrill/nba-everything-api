@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { useBallDontLieApi } from '@api';
+import { useBallDontLieApi, useSportsDataIOApi } from '@api';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
 
@@ -31,6 +31,8 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
       team_ids: [teamId],
     });
 
+    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
+
     const gamesWithData = getGamesWithData({
       games: games.data,
     });
@@ -52,13 +54,39 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
 
     const gamePlayerStatsResults = await Promise.all(gamePlayerStatsPromises);
 
-    const gameDataWithWins = gamesWithData.map((game) => {
+    const gameDataWithWinsAndLogo = gamesWithData.map((game) => {
       const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
 
+      const homeTeamWithLogo = {
+        ...home_team,
+        logo: sportsDataIOTeam.find((team) => team?.Key === home_team.abbreviation)
+          ?.WikipediaLogoUrl,
+      };
+
+      const visitorTeamWithLogo = {
+        ...visitor_team,
+        logo: sportsDataIOTeam.find((team) => team?.Key === visitor_team.abbreviation)
+          ?.WikipediaLogoUrl,
+      };
+
       if (home_team.id === teamId) {
-        return { ...game, ...{ win: home_team_score > visitor_team_score } };
+        return {
+          ...game,
+          ...{ win: home_team_score > visitor_team_score },
+          ...{
+            home_team: homeTeamWithLogo,
+            visitor_team: visitorTeamWithLogo,
+          },
+        };
       } else if (visitor_team.id === teamId) {
-        return { ...game, ...{ win: home_team_score < visitor_team_score } };
+        return {
+          ...game,
+          ...{ win: home_team_score < visitor_team_score },
+          ...{
+            home_team: homeTeamWithLogo,
+            visitor_team: visitorTeamWithLogo,
+          },
+        };
       }
     });
 
@@ -94,10 +122,10 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
       stat: 'blk',
     });
 
-    const wins = gameDataWithWins.filter((game) => game?.win).length;
-    const losses = gameDataWithWins.filter((game) => !game?.win).length;
+    const wins = gameDataWithWinsAndLogo.filter((game) => game?.win).length;
+    const losses = gameDataWithWinsAndLogo.filter((game) => !game?.win).length;
 
-    const gamesData = { gameData: gameDataWithWins, ppg, rpg, apg, spg, bpg, wins, losses };
+    const gamesData = { gameData: gameDataWithWinsAndLogo, ppg, rpg, apg, spg, bpg, wins, losses };
 
     return { data: gamesData };
   } catch (error: any) {

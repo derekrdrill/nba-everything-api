@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { ApiResponse, NBATeam } from '@balldontlie/sdk';
-import { useBallDontLieApi } from '@api';
+import { useBallDontLieApi, useSportsDataIOApi } from '@api';
 
 const ballDontLie = useBallDontLieApi();
 
 const getTeams = async (req: Request, res: Response) => {
   try {
-    const teams: ApiResponse<NBATeam[]> = await ballDontLie.nba.getTeams();
-    return teams;
+    const ballDontLieTeams: ApiResponse<NBATeam[]> = await ballDontLie.nba.getTeams();
+    return ballDontLieTeams;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -15,12 +15,48 @@ const getTeams = async (req: Request, res: Response) => {
 
 const getTeamsCurrent = async (req: Request, res: Response) => {
   try {
-    const teams: ApiResponse<NBATeam[]> = await ballDontLie.nba.getTeams();
+    const ballDontLieTeams: ApiResponse<NBATeam[]> = await ballDontLie.nba.getTeams();
     const currentTeams = {
-      data: teams.data.filter((team) => team.conference === 'East' || team.conference === 'West'),
+      data: ballDontLieTeams.data.filter(
+        (team) => team.conference === 'East' || team.conference === 'West',
+      ),
     };
 
-    return currentTeams;
+    const sportsDataIOTeams = await useSportsDataIOApi.getTeams();
+    const sportsDataIOTeamStadium = await useSportsDataIOApi.getStadiums();
+
+    const teamsReturn = currentTeams.data.map((team) => {
+      const teamData = sportsDataIOTeams.find((sdioTeam) => sdioTeam?.Key === team.abbreviation);
+      const teamStadiumID = teamData?.StadiumID;
+      const teamStadium = sportsDataIOTeamStadium.find(
+        (stadium) => stadium.StadiumID === teamStadiumID,
+      );
+
+      return {
+        ...team,
+        coach: teamData?.HeadCoach,
+        colors: {
+          primary: teamData?.PrimaryColor,
+          secondary: teamData?.SecondaryColor,
+          tertiary: teamData?.TertiaryColor,
+          quaternary: teamData?.QuaternaryColor,
+        },
+        logo: teamData?.WikipediaLogoUrl,
+        stadium: {
+          name: teamStadium?.Name,
+          address: teamStadium?.Address,
+          city: teamStadium?.City,
+          state: teamStadium?.State,
+          zip: teamStadium?.Zip,
+          country: teamStadium?.Country,
+          capacity: teamStadium?.Capacity,
+          geoLat: teamStadium?.GeoLat,
+          geoLong: teamStadium?.GeoLong,
+        },
+      };
+    });
+
+    return { data: teamsReturn };
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
