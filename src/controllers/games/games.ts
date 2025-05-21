@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { useBallDontLieApi } from '@api';
+import { useBallDontLieApi, useSportsDataIOApi } from '@api';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
 
@@ -92,13 +92,41 @@ const getGamesByTeamAndSeason = async (
 
     const gamePlayerStatsResults = await Promise.all(gamePlayerStatsPromises);
 
-    const gameDataWithWins = paginatedGamesWithData.map((game) => {
+    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
+
+    const gameDataWithWinsAndLogo = paginatedGamesWithData.map((game) => {
       const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
 
+      const homeTeamWithLogo = {
+        ...home_team,
+        logo: sportsDataIOTeam.find((team) => team?.Key === home_team.abbreviation)
+          ?.WikipediaLogoUrl,
+      };
+
+      const visitorTeamWithLogo = {
+        ...visitor_team,
+        logo: sportsDataIOTeam.find((team) => team?.Key === visitor_team.abbreviation)
+          ?.WikipediaLogoUrl,
+      };
+
       if (home_team.id === teamId) {
-        return { ...game, ...{ win: home_team_score > visitor_team_score } };
+        return {
+          ...game,
+          ...{ win: home_team_score > visitor_team_score },
+          ...{
+            home_team: homeTeamWithLogo,
+            visitor_team: visitorTeamWithLogo,
+          },
+        };
       } else if (visitor_team.id === teamId) {
-        return { ...game, ...{ win: home_team_score < visitor_team_score } };
+        return {
+          ...game,
+          ...{ win: home_team_score < visitor_team_score },
+          ...{
+            home_team: homeTeamWithLogo,
+            visitor_team: visitorTeamWithLogo,
+          },
+        };
       }
     });
 
@@ -136,7 +164,7 @@ const getGamesByTeamAndSeason = async (
     });
 
     const gamesData = {
-      gameData: gameDataWithWins,
+      gameData: gameDataWithWinsAndLogo,
       ppg,
       rpg,
       apg,
