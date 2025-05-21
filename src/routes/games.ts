@@ -6,7 +6,9 @@ const router = Router();
 
 router.get('/:teamId', checkCache, async (req, res) => {
   const key = req.originalUrl;
-  const data = await getGamesByTeam(req, res);
+  const perPage = Number(req.query.perPage) || 10;
+  const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
+  const data = await getGamesByTeam(req, res, { perPage, cursor });
 
   memcached.set(key, JSON.stringify(data), { expires: 60 }, (err) => {
     if (err) console.error;
@@ -17,11 +19,10 @@ router.get('/:teamId', checkCache, async (req, res) => {
 
 router.get('/:teamId/:season', checkCache, async (req, res) => {
   const key = req.originalUrl;
-  const data = await getGamesByTeamAndSeason(req, res);
+  const perPage = Number(req.query.perPage) || 10;
+  const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
+  const data = await getGamesByTeamAndSeason(req, res, { perPage, cursor });
 
-  // memcached.set(key, data, 60, (err) => {
-  //   if (err) console.error(err);
-  // });
   memcached.set(key, JSON.stringify(data), { expires: 60 }, (err) => {
     if (err) console.error(err);
   });
