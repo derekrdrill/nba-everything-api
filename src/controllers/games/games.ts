@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { useBallDontLieApi, useSportsDataIOApi } from '@api';
+import { useBallDontLieApi } from '@api';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
 
@@ -45,11 +45,34 @@ const getGamesByTeamAndSeason = async (
       team_ids: [teamId],
     });
 
-    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
-
     const paginatedGamesWithData = getGamesWithData({
       games: paginatedGames.data,
     });
+
+    // Get all games for the season to calculate accurate W-L record
+    const allGames: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
+      per_page: 82, // Get all games for the season
+      seasons: [season],
+      team_ids: [teamId],
+    });
+
+    const allGamesWithData = getGamesWithData({
+      games: allGames.data,
+    });
+
+    // Calculate W-L record from all games
+    const allGamesWithWins = allGamesWithData.map((game) => {
+      const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
+
+      if (home_team.id === teamId) {
+        return { ...game, ...{ win: home_team_score > visitor_team_score } };
+      } else if (visitor_team.id === teamId) {
+        return { ...game, ...{ win: home_team_score < visitor_team_score } };
+      }
+    });
+
+    const totalWins = allGamesWithWins.filter((game) => game?.win).length;
+    const totalLosses = allGamesWithWins.filter((game) => !game?.win).length;
 
     // Get stats for the current page of games only
     const gamePlayerStatsPromises = paginatedGamesWithData.map(async (game) => {
@@ -69,39 +92,13 @@ const getGamesByTeamAndSeason = async (
 
     const gamePlayerStatsResults = await Promise.all(gamePlayerStatsPromises);
 
-    const gameDataWithWinsAndLogo = paginatedGamesWithData.map((game) => {
+    const gameDataWithWins = paginatedGamesWithData.map((game) => {
       const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
 
-      const homeTeamWithLogo = {
-        ...home_team,
-        logo: sportsDataIOTeam.find((team) => team?.Key === home_team.abbreviation)
-          ?.WikipediaLogoUrl,
-      };
-
-      const visitorTeamWithLogo = {
-        ...visitor_team,
-        logo: sportsDataIOTeam.find((team) => team?.Key === visitor_team.abbreviation)
-          ?.WikipediaLogoUrl,
-      };
-
       if (home_team.id === teamId) {
-        return {
-          ...game,
-          ...{ win: home_team_score > visitor_team_score },
-          ...{
-            home_team: homeTeamWithLogo,
-            visitor_team: visitorTeamWithLogo,
-          },
-        };
+        return { ...game, ...{ win: home_team_score > visitor_team_score } };
       } else if (visitor_team.id === teamId) {
-        return {
-          ...game,
-          ...{ win: home_team_score < visitor_team_score },
-          ...{
-            home_team: homeTeamWithLogo,
-            visitor_team: visitorTeamWithLogo,
-          },
-        };
+        return { ...game, ...{ win: home_team_score < visitor_team_score } };
       }
     });
 
@@ -138,21 +135,18 @@ const getGamesByTeamAndSeason = async (
       stat: 'blk',
     });
 
-    const wins = gameDataWithWinsAndLogo.filter((game) => game?.win).length;
-    const losses = gameDataWithWinsAndLogo.filter((game) => !game?.win).length;
-
     const gamesData = {
-      gameData: gameDataWithWinsAndLogo,
+      gameData: gameDataWithWins,
       ppg,
       rpg,
       apg,
       spg,
       bpg,
-      wins,
-      losses,
+      wins: totalWins,
+      losses: totalLosses,
       pagination: {
         perPage,
-        totalGames: paginatedGames.data.length,
+        totalGames: allGamesWithData.length,
         nextCursor: paginatedGames.meta?.next_cursor,
       },
     };
