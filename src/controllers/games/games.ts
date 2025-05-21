@@ -5,12 +5,19 @@ import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helper
 
 const ballDontLie = useBallDontLieApi();
 
-const getGamesByTeam = async (req: Request, res: Response) => {
+interface PaginationParams {
+  perPage: number;
+  cursor?: number;
+}
+
+const getGamesByTeam = async (req: Request, res: Response, pagination: PaginationParams) => {
   const teamId = Number(req.params.teamId);
+  const { perPage, cursor } = pagination;
 
   try {
     const games: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
-      per_page: 82,
+      per_page: perPage,
+      cursor,
       team_ids: [teamId],
     });
 
@@ -20,24 +27,55 @@ const getGamesByTeam = async (req: Request, res: Response) => {
   }
 };
 
-const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
+const getGamesByTeamAndSeason = async (
+  req: Request,
+  res: Response,
+  pagination: PaginationParams,
+) => {
   const teamId = Number(req.params.teamId);
   const season = Number(req.params.season);
+  const { perPage, cursor } = pagination;
 
   try {
-    const games: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
-      per_page: 82,
+    // Get paginated games for display
+    const paginatedGames: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
+      per_page: perPage,
+      cursor,
       seasons: [season],
       team_ids: [teamId],
     });
 
-    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
-
-    const gamesWithData = getGamesWithData({
-      games: games.data,
+    const paginatedGamesWithData = getGamesWithData({
+      games: paginatedGames.data,
     });
 
-    const gamePlayerStatsPromises = gamesWithData.map(async (game) => {
+    // Get all games for the season to calculate accurate W-L record
+    const allGames: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
+      per_page: 82, // Get all games for the season
+      seasons: [season],
+      team_ids: [teamId],
+    });
+
+    const allGamesWithData = getGamesWithData({
+      games: allGames.data,
+    });
+
+    // Calculate W-L record from all games
+    const allGamesWithWins = allGamesWithData.map((game) => {
+      const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
+
+      if (home_team.id === teamId) {
+        return { ...game, ...{ win: home_team_score > visitor_team_score } };
+      } else if (visitor_team.id === teamId) {
+        return { ...game, ...{ win: home_team_score < visitor_team_score } };
+      }
+    });
+
+    const totalWins = allGamesWithWins.filter((game) => game?.win).length;
+    const totalLosses = allGamesWithWins.filter((game) => !game?.win).length;
+
+    // Get stats for the current page of games only
+    const gamePlayerStatsPromises = paginatedGamesWithData.map(async (game) => {
       if (game?.id) {
         const gamePlayerStats = await ballDontLie.nba.getStats({
           game_ids: [game.id],
@@ -54,7 +92,9 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
 
     const gamePlayerStatsResults = await Promise.all(gamePlayerStatsPromises);
 
-    const gameDataWithWinsAndLogo = gamesWithData.map((game) => {
+    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
+
+    const gameDataWithWinsAndLogo = paginatedGamesWithData.map((game) => {
       const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
 
       const homeTeamWithLogo = {
@@ -90,7 +130,8 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
       }
     });
 
-    const gamesPlayed = gamesWithData.length;
+    // Calculate stats for the current page only
+    const gamesPlayed = paginatedGamesWithData.length;
 
     const ppg = getStatPerGameTotal({
       gamesPlayed,
@@ -122,10 +163,21 @@ const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
       stat: 'blk',
     });
 
-    const wins = gameDataWithWinsAndLogo.filter((game) => game?.win).length;
-    const losses = gameDataWithWinsAndLogo.filter((game) => !game?.win).length;
-
-    const gamesData = { gameData: gameDataWithWinsAndLogo, ppg, rpg, apg, spg, bpg, wins, losses };
+    const gamesData = {
+      gameData: gameDataWithWinsAndLogo,
+      ppg,
+      rpg,
+      apg,
+      spg,
+      bpg,
+      wins: totalWins,
+      losses: totalLosses,
+      pagination: {
+        perPage,
+        totalGames: allGamesWithData.length,
+        nextCursor: paginatedGames.meta?.next_cursor,
+      },
+    };
 
     return { data: gamesData };
   } catch (error: any) {
