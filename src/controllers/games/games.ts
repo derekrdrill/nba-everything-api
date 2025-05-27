@@ -2,8 +2,10 @@ import { Request, Response } from 'express';
 import { useBallDontLieApi, useSportsDataIOApi } from '@api';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
+import { RateLimiter } from '@utils/rateLimiter';
 
 const ballDontLie = useBallDontLieApi();
+const rateLimiter = new RateLimiter(55); // Set slightly below the 60 requests/minute limit
 
 interface PaginationParams {
   perPage: number;
@@ -38,23 +40,27 @@ const getGamesByTeamAndSeason = async (
 
   try {
     // Get paginated games for display
-    const paginatedGames: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
-      per_page: perPage,
-      cursor,
-      seasons: [season],
-      team_ids: [teamId],
-    });
+    const paginatedGames: ApiResponse<NBAGame[]> = await rateLimiter.enqueue(() =>
+      ballDontLie.nba.getGames({
+        per_page: perPage,
+        cursor,
+        seasons: [season],
+        team_ids: [teamId],
+      }),
+    );
 
     const paginatedGamesWithData = getGamesWithData({
       games: paginatedGames.data,
     });
 
     // Get all games for the season to calculate accurate W-L record
-    const allGames: ApiResponse<NBAGame[]> = await ballDontLie.nba.getGames({
-      per_page: 82, // Get all games for the season
-      seasons: [season],
-      team_ids: [teamId],
-    });
+    const allGames: ApiResponse<NBAGame[]> = await rateLimiter.enqueue(() =>
+      ballDontLie.nba.getGames({
+        per_page: 82, // Get all games for the season
+        seasons: [season],
+        team_ids: [teamId],
+      }),
+    );
 
     const allGamesWithData = getGamesWithData({
       games: allGames.data,
@@ -74,23 +80,25 @@ const getGamesByTeamAndSeason = async (
     const totalWins = allGamesWithWins.filter((game) => game?.win).length;
     const totalLosses = allGamesWithWins.filter((game) => !game?.win).length;
 
-    // Get stats for the current page of games only
-    const gamePlayerStatsPromises = paginatedGamesWithData.map(async (game) => {
-      if (game?.id) {
-        const gamePlayerStats = await ballDontLie.nba.getStats({
-          game_ids: [game.id],
-          per_page: 50,
-        });
+    // Batch game IDs for stats request
+    const gameIds = paginatedGamesWithData
+      .filter((game): game is NonNullable<typeof game> => game?.id !== undefined)
+      .map((game) => game.id);
 
-        const gamePlayerStatsByTeam = gamePlayerStats.data.filter(
-          (stat) => stat.team.id === teamId,
-        );
+    // Get stats for all games in one request
+    const gamePlayerStats = await rateLimiter.enqueue(() =>
+      ballDontLie.nba.getStats({
+        game_ids: gameIds,
+        per_page: 50 * gameIds.length, // Request all stats for all games
+      }),
+    );
 
-        return gamePlayerStatsByTeam;
-      }
-    });
+    const gamePlayerStatsByTeam = gamePlayerStats.data.filter((stat) => stat.team.id === teamId);
 
-    const gamePlayerStatsResults = await Promise.all(gamePlayerStatsPromises);
+    // Group stats by game
+    const gamePlayerStatsResults = gameIds.map((gameId) =>
+      gamePlayerStatsByTeam.filter((stat) => stat.game.id === gameId),
+    );
 
     const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
 
