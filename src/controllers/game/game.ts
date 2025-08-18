@@ -5,6 +5,7 @@ import {
   getGameBoxScore,
   getGameStatsById,
   getGameStatLeadersByTeam,
+  getEnhancedStatLeaders,
 } from '@controllers/game/helpers';
 import { NBAGameWithTeamIds } from '@types';
 
@@ -20,6 +21,7 @@ const getGame = async (req: Request, res: Response) => {
     });
 
     const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
+    const sportsDataIOPlayerHeadshots = await useSportsDataIOApi.getPlayerHeadshots();
 
     const gameStatsFull = ballDontLieGameStats.data;
     const homeTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
@@ -51,6 +53,16 @@ const getGame = async (req: Request, res: Response) => {
       (team) => team?.Key === visitorTeamStats[0].team.abbreviation,
     )?.WikipediaLogoUrl;
 
+    const homeTeamStatLeadersWithHeadshots = getEnhancedStatLeaders({
+      playerHeadshots: sportsDataIOPlayerHeadshots,
+      statLeaders: homeTeamStatLeaders,
+    });
+
+    const visitorTeamStatLeadersWithHeadshots = getEnhancedStatLeaders({
+      playerHeadshots: sportsDataIOPlayerHeadshots,
+      statLeaders: visitorTeamStatLeaders,
+    });
+
     const gameData = {
       homeTeam: {
         abbrName: homeTeamStats[0].team.abbreviation,
@@ -60,7 +72,7 @@ const getGame = async (req: Request, res: Response) => {
         locale: 'home',
         logo: homeLogo,
         score: homeTeamStats[0].game.home_team_score,
-        statLeaders: homeTeamStatLeaders,
+        statLeaders: homeTeamStatLeadersWithHeadshots,
       },
       visitorTeam: {
         abbrName: visitorTeamStats[0].team.abbreviation,
@@ -70,7 +82,7 @@ const getGame = async (req: Request, res: Response) => {
         locale: 'vistor',
         logo: visitorLogo,
         score: visitorTeamStats[0].game.visitor_team_score,
-        statLeaders: visitorTeamStatLeaders,
+        statLeaders: visitorTeamStatLeadersWithHeadshots,
       },
     };
 
