@@ -1,10 +1,14 @@
 import axios from 'axios';
-import { SportsDataIONBATeam, SportsDataIONBATeamStadium } from '@types';
+import {
+  SportsDataIONBAPlayerHeadshot,
+  SportsDataIONBATeam,
+  SportsDataIONBATeamStadium,
+} from '@types';
 
 const getTeams = async (): Promise<SportsDataIONBATeam[]> => {
   const sportsDataIOTeamOptions = {
     method: 'GET',
-    url: 'https://api.sportsdata.io/v3/nba/scores/json/AllTeams',
+    url: `${process.env.SPORTS_DATA_IO_API_URL}/scores/json/AllTeams`,
     params: { key: process.env.SPORTS_DATA_IO_API_KEY },
   };
 
@@ -34,7 +38,7 @@ const getTeams = async (): Promise<SportsDataIONBATeam[]> => {
 const getStadiums = async (): Promise<SportsDataIONBATeamStadium[]> => {
   const sportsDataIOTeamStadiumOptions = {
     method: 'GET',
-    url: 'https://api.sportsdata.io/v3/nba/scores/json/Stadiums',
+    url: `${process.env.SPORTS_DATA_IO_API_URL}/scores/json/Stadiums`,
     params: { key: process.env.SPORTS_DATA_IO_API_KEY },
   };
 
@@ -45,4 +49,17 @@ const getStadiums = async (): Promise<SportsDataIONBATeamStadium[]> => {
   return sportsDataIOTeamStadium;
 };
 
-export { getStadiums, getTeams };
+const getPlayerHeadshots = async (): Promise<SportsDataIONBAPlayerHeadshot[]> => {
+  const sportsDataIOPlayerHeadshotOptions = {
+    method: 'GET',
+    url: `${process.env.SPORTS_DATA_IO_API_URL}/headshots/json/Headshots?key=${process.env.SPORTS_DATA_IO_HEADSHOTS_API_KEY}`,
+    params: { key: process.env.SPORTS_DATA_IO_API_KEY },
+  };
+
+  const sportsDataIOPlayerHeadshotRequest = await axios.request(sportsDataIOPlayerHeadshotOptions);
+  const sportsDataIOPlayerHeadshot =
+    sportsDataIOPlayerHeadshotRequest.data as SportsDataIONBAPlayerHeadshot[];
+  return sportsDataIOPlayerHeadshot;
+};
+
+export { getPlayerHeadshots, getStadiums, getTeams };
