@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ApiResponse, NBAStats } from '@balldontlie/sdk';
-import { useBallDontLieApi, useSportsDataIOApi } from '@api';
+import { useBallDontLieApi, useGameSummary, useSportsDataIOApi } from '@api';
 import {
   getGameBoxScore,
   getGameStatsById,
@@ -86,7 +86,33 @@ const getGame = async (req: Request, res: Response) => {
       },
     };
 
-    return { data: gameData };
+    const gameSummaryGameData = {
+      homeTeam: {
+        abbrName: gameData.homeTeam.abbrName,
+        boxScoreData: gameData.homeTeam.boxScoreData,
+        fullName: gameData.homeTeam.fullName,
+        score: gameData.homeTeam.score,
+        statLeaders: gameData.homeTeam.statLeaders,
+      },
+      visitorTeam: {
+        abbrName: gameData.visitorTeam.abbrName,
+        boxScoreData: gameData.visitorTeam.boxScoreData,
+        fullName: gameData.visitorTeam.fullName,
+        score: gameData.visitorTeam.score,
+        statLeaders: gameData.visitorTeam.statLeaders,
+      },
+    };
+
+    const gameSummary = await useGameSummary({
+      gameData: JSON.stringify(gameSummaryGameData),
+    });
+
+    return {
+      data: {
+        ...gameData,
+        gameSummary,
+      },
+    };
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
