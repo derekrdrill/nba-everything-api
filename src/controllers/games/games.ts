@@ -85,13 +85,15 @@ const getGamesByTeamAndSeason = async (
       .filter((game): game is NonNullable<typeof game> => game?.id !== undefined)
       .map((game) => game.id);
 
-    // Get stats for all games in one request
-    const gamePlayerStats = await rateLimiter.enqueue(() =>
-      ballDontLie.nba.getStats({
-        game_ids: gameIds,
-        per_page: 50 * gameIds.length, // Request all stats for all games
-      }),
-    );
+    const [gamePlayerStats, sportsDataIOTeam] = await Promise.all([
+      rateLimiter.enqueue(() =>
+        ballDontLie.nba.getStats({
+          game_ids: gameIds,
+          per_page: 50 * gameIds.length, // Request all stats for all games
+        }),
+      ),
+      useSportsDataIOApi.getTeams(),
+    ]);
 
     const gamePlayerStatsByTeam = gamePlayerStats.data.filter((stat) => stat.team.id === teamId);
 
@@ -99,8 +101,6 @@ const getGamesByTeamAndSeason = async (
     const gamePlayerStatsResults = gameIds.map((gameId) =>
       gamePlayerStatsByTeam.filter((stat) => stat.game.id === gameId),
     );
-
-    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
 
     const gameDataWithWinsAndLogo = paginatedGamesWithData.map((game) => {
       const { home_team, home_team_score, visitor_team, visitor_team_score } = game;

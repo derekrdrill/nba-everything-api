@@ -52,7 +52,7 @@ const getStadiums = async (): Promise<SportsDataIONBATeamStadium[]> => {
 const getPlayerHeadshots = async (): Promise<SportsDataIONBAPlayerHeadshot[]> => {
   const sportsDataIOPlayerHeadshotOptions = {
     method: 'GET',
-    url: `${process.env.SPORTS_DATA_IO_API_URL}/headshots/json/Headshots?key=${process.env.SPORTS_DATA_IO_HEADSHOTS_API_KEY}`,
+    url: `${process.env.SPORTS_DATA_IO_API_URL}/headshots/json/Headshots?key=${process.env.SPORTS_DATA_IO_ADVANCED_API_KEY}`,
     params: { key: process.env.SPORTS_DATA_IO_API_KEY },
   };
 

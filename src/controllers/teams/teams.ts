@@ -15,15 +15,17 @@ const getTeams = async (req: Request, res: Response) => {
 
 const getTeamsCurrent = async (req: Request, res: Response) => {
   try {
-    const ballDontLieTeams: ApiResponse<NBATeam[]> = await ballDontLie.nba.getTeams();
+    const [ballDontLieTeams, sportsDataIOTeams, sportsDataIOTeamStadium] = await Promise.all([
+      ballDontLie.nba.getTeams(),
+      useSportsDataIOApi.getTeams(),
+      useSportsDataIOApi.getStadiums(),
+    ]);
+
     const currentTeams = {
       data: ballDontLieTeams.data.filter(
         (team) => team.conference === 'East' || team.conference === 'West',
       ),
     };
-
-    const sportsDataIOTeams = await useSportsDataIOApi.getTeams();
-    const sportsDataIOTeamStadium = await useSportsDataIOApi.getStadiums();
 
     const teamsReturn = currentTeams.data.map((team) => {
       const teamData = sportsDataIOTeams.find((sdioTeam) => sdioTeam?.Key === team.abbreviation);

@@ -20,8 +20,10 @@ const getGame = async (req: Request, res: Response) => {
       per_page: 50,
     });
 
-    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
-    const sportsDataIOPlayerHeadshots = await useSportsDataIOApi.getPlayerHeadshots();
+    const [sportsDataIOTeam, sportsDataIOPlayerHeadshots] = await Promise.all([
+      useSportsDataIOApi.getTeams(),
+      useSportsDataIOApi.getPlayerHeadshots(),
+    ]);
 
     const gameStatsFull = ballDontLieGameStats.data;
     const homeTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
