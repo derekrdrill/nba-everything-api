@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ApiResponse, NBATeam } from '@balldontlie/sdk';
+import { localCache } from '@cache';
 import { useBallDontLieApi, useSportsDataIOApi } from '@api';
 
 const ballDontLie = useBallDontLieApi();
@@ -15,6 +16,11 @@ const getTeams = async (req: Request, res: Response) => {
 
 const getTeamsCurrent = async (req: Request, res: Response) => {
   try {
+    const cachedTeams = localCache.get('teams_current');
+    if (cachedTeams) {
+      return cachedTeams;
+    }
+
     const [ballDontLieTeams, sportsDataIOTeams, sportsDataIOTeamStadium] = await Promise.all([
       ballDontLie.nba.getTeams(),
       useSportsDataIOApi.getTeams(),
@@ -58,7 +64,11 @@ const getTeamsCurrent = async (req: Request, res: Response) => {
       };
     });
 
-    return { data: teamsReturn };
+    const result = { data: teamsReturn };
+
+    localCache.set('teams_current', result, 24 * 60 * 60 * 1000);
+
+    return result;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

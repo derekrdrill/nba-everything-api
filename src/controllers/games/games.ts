@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { useBallDontLieApi, useSportsDataIOApi } from '@api';
+import { localCache } from '@cache';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
 import { RateLimiter } from '@utils/rateLimiter';
@@ -39,6 +40,12 @@ const getGamesByTeamAndSeason = async (
   const { perPage, cursor } = pagination;
 
   try {
+    const cacheKey = `games_${teamId}_${season}_${perPage}_${cursor || 0}`;
+    const cachedGames = localCache.get(cacheKey);
+    if (cachedGames) {
+      return cachedGames;
+    }
+
     // Get paginated games for display
     const paginatedGames: ApiResponse<NBAGame[]> = await rateLimiter.enqueue(() =>
       ballDontLie.nba.getGames({
@@ -187,7 +194,11 @@ const getGamesByTeamAndSeason = async (
       },
     };
 
-    return { data: gamesData };
+    const result = { data: gamesData };
+
+    localCache.set(cacheKey, result, 12 * 60 * 60 * 1000);
+
+    return result;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
