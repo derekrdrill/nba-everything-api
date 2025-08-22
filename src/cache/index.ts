@@ -35,4 +35,36 @@ const requestDataBasedOnCache = (req: Request, res: Response, data: any) => {
   res.json(data);
 };
 
-export { checkCache, memcached, requestDataBasedOnCache };
+class LocalCache {
+  private cache = new Map();
+  private readonly MAX_TTL = 24 * 60 * 60 * 1000; // 1 day max
+
+  set(key: string, data: any, ttl: number) {
+    const cappedTtl = Math.min(ttl, this.MAX_TTL);
+    this.cache.set(key, {
+      data,
+      expires: Date.now() + cappedTtl,
+    });
+  }
+
+  get(key: string) {
+    const item = this.cache.get(key);
+    if (!item || Date.now() > item.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+    return item.data;
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+
+  size() {
+    return this.cache.size;
+  }
+}
+
+const localCache = new LocalCache();
+
+export { checkCache, memcached, requestDataBasedOnCache, localCache };

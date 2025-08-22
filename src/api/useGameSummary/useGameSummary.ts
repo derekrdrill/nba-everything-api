@@ -1,6 +1,13 @@
 import { ChatOpenAI } from '@langchain/openai';
+import { localCache } from '@cache';
 
 const useGameSummary = async ({ gameData }: { gameData: any }) => {
+  const cacheKey = `game_summary_${JSON.stringify(gameData).slice(0, 100)}`;
+  const cachedSummary = localCache.get(cacheKey);
+  if (cachedSummary) {
+    return cachedSummary;
+  }
+
   const model = new ChatOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     temperature: 0.5,
@@ -21,7 +28,10 @@ const useGameSummary = async ({ gameData }: { gameData: any }) => {
   const gameSummary = JSON.parse(JSON.stringify(await model.invoke(gameSummaryPrompt))).kwargs
     .content;
 
-  return JSON.parse(gameSummary);
+  const parsedSummary = JSON.parse(gameSummary);
+  localCache.set(cacheKey, parsedSummary, 24 * 60 * 60 * 1000);
+
+  return parsedSummary;
 };
 
 export { useGameSummary };
