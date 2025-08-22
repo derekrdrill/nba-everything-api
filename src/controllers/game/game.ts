@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ApiResponse, NBAStats } from '@balldontlie/sdk';
 import { useBallDontLieApi, useGameSummary, useSportsDataIOApi } from '@api';
+import { localCache } from '@cache';
 import {
   getGameBoxScore,
   getGameStatsById,
@@ -15,13 +16,20 @@ const getGame = async (req: Request, res: Response) => {
   const gameId = Number(req.params.gameId);
 
   try {
+    const cachedGame = localCache.get(`game_${gameId}`);
+    if (cachedGame) {
+      return cachedGame;
+    }
+
     const ballDontLieGameStats: ApiResponse<NBAStats[]> = await ballDontLie.nba.getStats({
       game_ids: [gameId],
       per_page: 50,
     });
 
-    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
-    const sportsDataIOPlayerHeadshots = await useSportsDataIOApi.getPlayerHeadshots();
+    const [sportsDataIOTeam, sportsDataIOPlayerHeadshots] = await Promise.all([
+      useSportsDataIOApi.getTeams(),
+      useSportsDataIOApi.getPlayerHeadshots(),
+    ]);
 
     const gameStatsFull = ballDontLieGameStats.data;
     const homeTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
@@ -107,12 +115,16 @@ const getGame = async (req: Request, res: Response) => {
       gameData: JSON.stringify(gameSummaryGameData),
     });
 
-    return {
+    const result = {
       data: {
         ...gameData,
         gameSummary,
       },
     };
+
+    localCache.set(`game_${gameId}`, result, 24 * 60 * 60 * 1000);
+
+    return result;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

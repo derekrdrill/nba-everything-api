@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { useBallDontLieApi, useSportsDataIOApi } from '@api';
+import { localCache } from '@cache';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
 import { RateLimiter } from '@utils/rateLimiter';
@@ -39,6 +40,12 @@ const getGamesByTeamAndSeason = async (
   const { perPage, cursor } = pagination;
 
   try {
+    const cacheKey = `games_${teamId}_${season}_${perPage}_${cursor || 0}`;
+    const cachedGames = localCache.get(cacheKey);
+    if (cachedGames) {
+      return cachedGames;
+    }
+
     // Get paginated games for display
     const paginatedGames: ApiResponse<NBAGame[]> = await rateLimiter.enqueue(() =>
       ballDontLie.nba.getGames({
@@ -85,13 +92,15 @@ const getGamesByTeamAndSeason = async (
       .filter((game): game is NonNullable<typeof game> => game?.id !== undefined)
       .map((game) => game.id);
 
-    // Get stats for all games in one request
-    const gamePlayerStats = await rateLimiter.enqueue(() =>
-      ballDontLie.nba.getStats({
-        game_ids: gameIds,
-        per_page: 50 * gameIds.length, // Request all stats for all games
-      }),
-    );
+    const [gamePlayerStats, sportsDataIOTeam] = await Promise.all([
+      rateLimiter.enqueue(() =>
+        ballDontLie.nba.getStats({
+          game_ids: gameIds,
+          per_page: 50 * gameIds.length, // Request all stats for all games
+        }),
+      ),
+      useSportsDataIOApi.getTeams(),
+    ]);
 
     const gamePlayerStatsByTeam = gamePlayerStats.data.filter((stat) => stat.team.id === teamId);
 
@@ -99,8 +108,6 @@ const getGamesByTeamAndSeason = async (
     const gamePlayerStatsResults = gameIds.map((gameId) =>
       gamePlayerStatsByTeam.filter((stat) => stat.game.id === gameId),
     );
-
-    const sportsDataIOTeam = await useSportsDataIOApi.getTeams();
 
     const gameDataWithWinsAndLogo = paginatedGamesWithData.map((game) => {
       const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
@@ -187,7 +194,11 @@ const getGamesByTeamAndSeason = async (
       },
     };
 
-    return { data: gamesData };
+    const result = { data: gamesData };
+
+    localCache.set(cacheKey, result, 12 * 60 * 60 * 1000);
+
+    return result;
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
