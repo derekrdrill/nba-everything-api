@@ -37,7 +37,13 @@ Examples:
 
 ### Game Summary
 
-This is a summary of the game that is returned in the `/game/:gameId` endpoint. It determined based on the total box score and outcome data that is dervied there. `langchain` and Open AI models are used to create the summary and it is then stored in a `MongoDB` to prevent the need to hit Open AI twice for the same game, as a cost-saving and performance measure.
+There is a summary of the game that is returned in the `/game/:gameId` endpoint. It highlights the following: 
+
+- **Overview**: A general sumary of the outcome of the game
+- **Key highlights**: Bullets of players who showed out and their stat lines
+- **Insight**: Thoughtful insight of the game and its outcome
+
+It is derived based on the box score, stat leaders and other game-outcome data. `langchain` and Open AI models are used to create the summary and it is then stored in a `MongoDB` to prevent the need to hit Open AI twice for the same game, as a cost-saving and performance measure.
 
 
 <br>
