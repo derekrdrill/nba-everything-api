@@ -2,7 +2,7 @@
 
 A powerful API of NBA data, designed to drive the functionality of the NBA everything web app: 
 - Repository: https://github.com/derekrdrill/nba-everything
-- URL: _Production URL coming soon_
+- URL: https://nba-everything.vercel.app/
 
 <br>
 
@@ -10,7 +10,7 @@ A powerful API of NBA data, designed to drive the functionality of the NBA every
 
 ### Ball Don't Lie API
 
-The data for this API is sourced from the https://docs.balldontlie.io/#nba-api
+Data for this API is sourced from the [Ball Don't Lie API](https://docs.balldontlie.io/#nba-api)
 
 The following endpoint from this api are utilized to power the endpoints of this API:
 
@@ -23,17 +23,22 @@ The endpoints are designed to take this data, allocate it to each endpoint to al
 
 Things like teams and player stat averages are examples of dynamic things calculated within a the NBA Everything endpoints, something not available in the `ALL-STAR` level Ball Don't Lie Tier
 
-### Future AI plans?
+### SportsDataIO
 
-`langchain` may be immplemented to utilize OpenAI models to feed data that is not part of the Ball Don't Lie API
+Data is also sourced from the [Sports Data IO NBA API](https://sportsdata.io/developers/api-documentation/nba)
 
-Things such as:
+This does not have as much historic data as the Ball Don't Lie API does, but it does provide data that the Ball Don't Lie API does not.
 
-- team colors
-- player photos
-- highlight video urls
+Examples:
 
-And endless other NBA data could all potentially be pulled into some of the NBA Everything API endpoints with AI
+- Team logos: https://api.sportsdata.io/v3/nba/scores/json/AllTeams
+- Stadium Information: https://api.sportsdata.io/v3/nba/scores/json/Stadiums
+- Player Headshots: https://api.sportsdata.io/v3/nba/headshots/json/Headshots
+
+### Game Summary
+
+This is a summary of the game that is returned in the `/game/:gameId` endpoint. It determined based on the total box score and outcome data that is dervied there. `langchain` and Open AI models are used to create the summary and it is then stored in a `MongoDB` to prevent the need to hit Open AI twice for the same game, as a cost-saving and performance measure.
+
 
 <br>
 
@@ -42,6 +47,7 @@ And endless other NBA data could all potentially be pulled into some of the NBA 
 - Node.js
 - Express JS
 - TypeScript
+- Mongoose
 - [Ball Don't Lie SDK](https://github.com/balldontlie-api/typescript)
 - [MemJS](https://github.com/memcachier/memjs)
 
@@ -49,8 +55,9 @@ And endless other NBA data could all potentially be pulled into some of the NBA 
 
 ## Caching
 
-[Memcachier](https://www.memcachier.com/), [Heroku](https://devcenter.heroku.com/articles/memcachier), and [MemJS](https://github.com/memcachier/memjs) are utilized together to cache the data of these endpoints
-
+- Local caching is set up to maintain cache data directly on the server to aid load times
+- [Memcachier](https://www.memcachier.com/), [Heroku](https://devcenter.heroku.com/articles/memcachier), and [MemJS](https://github.com/memcachier/memjs) are also utilized together to cache the data of these endpoints
+   - As a back-up for when there are server restarts
 
 
 <br>
