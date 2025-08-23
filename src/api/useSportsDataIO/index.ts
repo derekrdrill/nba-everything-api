@@ -30,6 +30,8 @@ const getTeams = async (): Promise<SportsDataIONBATeam[]> => {
         return { ...team, Key: 'SAS' };
       } else if (team.Key === 'GS') {
         return { ...team, Key: 'GSW' };
+      } else if (team.Key === 'PHO') {
+        return { ...team, Key: 'PHX' };
       } else {
         return { ...team, Key: team.Key };
       }
