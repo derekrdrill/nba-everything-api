@@ -112,6 +112,7 @@ const getGame = async (req: Request, res: Response) => {
     };
 
     const gameSummary = await useGameSummary({
+      gameId: gameId.toString(),
       gameData: JSON.stringify(gameSummaryGameData),
     });
 
