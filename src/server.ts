@@ -49,14 +49,16 @@ app.get('/', (req, res) => {
   res.send('NBA Everything API is running...');
 });
 
-import teams from '@routes/teams';
-import games from '@routes/games';
 import game from '@routes/game';
+import games from '@routes/games';
 import player from '@routes/player';
+import seasons from '@routes/seasons';
+import teams from '@routes/teams';
 
 app.use('/game', game);
 app.use('/games', games);
 app.use('/player', player);
+app.use('/seasons', seasons);
 app.use('/teams', teams);
 
 app.listen(PORT, () => {
