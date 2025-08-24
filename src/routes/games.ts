@@ -19,9 +19,7 @@ router.get('/:teamId', checkCache, async (req, res) => {
 
 router.get('/:teamId/:season', checkCache, async (req, res) => {
   const key = req.originalUrl;
-  const perPage = Number(req.query.perPage) || 10;
-  const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
-  const data = await getGamesByTeamAndSeason(req, res, { perPage, cursor });
+  const data = await getGamesByTeamAndSeason(req, res);
 
   memcached.set(key, JSON.stringify(data), { expires: 60 }, (err) => {
     if (err) console.error(err);
