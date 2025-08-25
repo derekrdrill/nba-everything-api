@@ -19,9 +19,12 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Login to Heroku
+      - name: Deploy to Heroku - Dev
         uses: akhileshns/heroku-deploy@v3.12.12
         with:
           heroku_api_key: ${{ secrets.NBA_EVERYTHING_API_HEROKU_KEY }}
           heroku_email: ${{ secrets.NBA_EVERYTHING_API_HEROKU_EMAIL }}
           heroku_app_name: ${{ secrets.NBA_EVERYTHING_API_HEROKU_APP_NAME_DEV }}
+
+      - name: Restart server
+        run: heroku ps:restart nba-everything-api-development
