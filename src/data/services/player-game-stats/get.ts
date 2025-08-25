@@ -1,16 +1,16 @@
 import { NBAStats } from '@balldontlie/sdk';
 import conn from '@data/connection';
 import { PlayerGameStats } from '@data/models';
+import { getPlayerGameStatsMapped } from '@data/helpers';
 
 async function getPlayerGameStatsByGameId({ gameId }: { gameId: number }): Promise<NBAStats[]> {
   await conn();
-  const playerGameStats = await PlayerGameStats.find(
-    {
-      'game.id': gameId,
-    },
-    { __v: 0, _id: 0 },
-  );
-  return playerGameStats;
+  const playerGameStats = await PlayerGameStats.find({
+    'game.id': gameId,
+  }).lean();
+
+  const playerGameStatsMapped = getPlayerGameStatsMapped({ playerGameStats });
+  return playerGameStatsMapped;
 }
 
 async function getPlayerGameStatsByTeamAndSeason({
@@ -24,8 +24,10 @@ async function getPlayerGameStatsByTeamAndSeason({
   const playerGameStats = await PlayerGameStats.find({
     'game.season': season,
     'team.id': teamId,
-  });
-  return playerGameStats;
+  }).lean();
+
+  const playerGameStatsMapped = getPlayerGameStatsMapped({ playerGameStats });
+  return playerGameStatsMapped;
 }
 
 export { getPlayerGameStatsByGameId, getPlayerGameStatsByTeamAndSeason };
