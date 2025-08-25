@@ -8,6 +8,7 @@
     "@langchain/core": "^0.3.71",
     "@langchain/openai": "^0.6.7",
     "axios": "^1.8.1",
+    "bottleneck": "^2.19.5",
     "commander": "^14.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

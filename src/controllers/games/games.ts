@@ -4,6 +4,7 @@ import { localCache } from '@cache';
 import { ApiResponse, NBAGame } from '@balldontlie/sdk';
 import { getGamesWithData, getStatPerGameTotal } from '@controllers/games/helpers';
 import { RateLimiter } from '@utils/rateLimiter';
+import { getPlayerGameStatsByTeamAndSeason } from '@data/services';
 
 const ballDontLie = useBallDontLieApi();
 const rateLimiter = new RateLimiter(55); // Set slightly below the 60 requests/minute limit
@@ -30,101 +31,97 @@ const getGamesByTeam = async (req: Request, res: Response, pagination: Paginatio
   }
 };
 
-const getGamesByTeamAndSeason = async (
-  req: Request,
-  res: Response,
-  pagination: PaginationParams,
-) => {
+const getGamesByTeamAndSeason = async (req: Request, res: Response) => {
   const teamId = Number(req.params.teamId);
   const season = Number(req.params.season);
-  const { perPage, cursor } = pagination;
 
   try {
-    const cacheKey = `games_${teamId}_${season}_${perPage}_${cursor || 0}`;
+    const cacheKey = `games_${teamId}_${season}`;
     const cachedGames = localCache.get(cacheKey);
     if (cachedGames) {
       return cachedGames;
     }
 
-    // Get paginated games for display
-    const paginatedGames: ApiResponse<NBAGame[]> = await rateLimiter.enqueue(() =>
-      ballDontLie.nba.getGames({
-        per_page: perPage,
-        cursor,
-        seasons: [season],
-        team_ids: [teamId],
-      }),
-    );
-
-    const paginatedGamesWithData = getGamesWithData({
-      games: paginatedGames.data,
-    });
-
-    // Get all games for the season to calculate accurate W-L record
-    const allGames: ApiResponse<NBAGame[]> = await rateLimiter.enqueue(() =>
-      ballDontLie.nba.getGames({
-        per_page: 82, // Get all games for the season
-        seasons: [season],
-        team_ids: [teamId],
-      }),
-    );
-
-    const allGamesWithData = getGamesWithData({
-      games: allGames.data,
-    });
-
-    // Calculate W-L record from all games
-    const allGamesWithWins = allGamesWithData.map((game) => {
-      const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
-
-      if (home_team.id === teamId) {
-        return { ...game, ...{ win: home_team_score > visitor_team_score } };
-      } else if (visitor_team.id === teamId) {
-        return { ...game, ...{ win: home_team_score < visitor_team_score } };
-      }
-    });
-
-    const totalWins = allGamesWithWins.filter((game) => game?.win).length;
-    const totalLosses = allGamesWithWins.filter((game) => !game?.win).length;
-
-    // Batch game IDs for stats request
-    const gameIds = paginatedGamesWithData
-      .filter((game): game is NonNullable<typeof game> => game?.id !== undefined)
-      .map((game) => game.id);
-
-    const [gamePlayerStats, sportsDataIOTeam] = await Promise.all([
-      rateLimiter.enqueue(() =>
-        ballDontLie.nba.getStats({
-          game_ids: gameIds,
-          per_page: 50 * gameIds.length, // Request all stats for all games
+    const [allGamesFromBallDontLie, sportsDataIOTeam, mongoDBPlayerStats] = await Promise.all([
+      await rateLimiter.enqueue(() =>
+        ballDontLie.nba.getGames({
+          per_page: 82,
+          seasons: [season],
+          team_ids: [teamId],
         }),
       ),
       useSportsDataIOApi.getTeams(),
+      await getPlayerGameStatsByTeamAndSeason({
+        season,
+        teamId,
+      }),
     ]);
 
-    const gamePlayerStatsByTeam = gamePlayerStats.data.filter((stat) => stat.team.id === teamId);
+    const allGamesFromBallDontLieWithData = getGamesWithData({
+      games: allGamesFromBallDontLie.data,
+    });
 
-    // Group stats by game
+    const mongoDBPlayerStatsGamesOnly = mongoDBPlayerStats
+      .map((stat) => stat.game)
+      .sort((a, b) => (a.date > b.date ? -1 : 1));
+    const mongoDBPlayerStatsGamesOnlyMap = new Map();
+
+    mongoDBPlayerStatsGamesOnly.forEach((game) => {
+      const gameId = game.id;
+      if (!mongoDBPlayerStatsGamesOnlyMap.has(gameId)) {
+        mongoDBPlayerStatsGamesOnlyMap.set(gameId, game);
+      }
+    });
+
+    const mongoDBPlayerStatsGamesOnlyNoDups: (NBAGame & {
+      home_team_id: number;
+      visitor_team_id: number;
+    })[] = Array.from(mongoDBPlayerStatsGamesOnlyMap.values());
+
+    const allGamesWithWins = allGamesFromBallDontLieWithData
+      .map((game) => {
+        const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
+
+        if (home_team.id === teamId) {
+          return { ...game, ...{ win: home_team_score > visitor_team_score } };
+        } else if (visitor_team.id === teamId) {
+          return { ...game, ...{ win: home_team_score < visitor_team_score } };
+        }
+      })
+      .filter((game): game is NBAGame & { win: boolean } => game !== undefined); // Filter out undefined values
+
+    const totalWins = allGamesWithWins.filter((game) => game?.win).length;
+    const totalLosses = allGamesWithWins.filter((game) => !game?.win).length;
+    const gameIds = mongoDBPlayerStatsGamesOnlyNoDups.map((game) => game.id);
+    const gamePlayerStatsByTeam = mongoDBPlayerStats.filter((stat) => stat.team.id === teamId);
+
     const gamePlayerStatsResults = gameIds.map((gameId) =>
       gamePlayerStatsByTeam.filter((stat) => stat.game.id === gameId),
     );
 
-    const gameDataWithWinsAndLogo = paginatedGamesWithData.map((game) => {
-      const { home_team, home_team_score, visitor_team, visitor_team_score } = game;
+    const gameDataWithWinsAndLogo = mongoDBPlayerStatsGamesOnlyNoDups.map((game) => {
+      const { home_team_id, home_team_score, visitor_team_id, visitor_team_score } = game;
+
+      const home_team = allGamesWithWins.find(
+        (game) => game?.home_team.id === home_team_id,
+      )?.home_team;
+      const visitor_team = allGamesWithWins.find(
+        (game) => game?.visitor_team.id === visitor_team_id,
+      )?.visitor_team;
 
       const homeTeamWithLogo = {
         ...home_team,
-        logo: sportsDataIOTeam.find((team) => team?.Key === home_team.abbreviation)
+        logo: sportsDataIOTeam.find((team) => team?.Key === home_team?.abbreviation)
           ?.WikipediaLogoUrl,
       };
 
       const visitorTeamWithLogo = {
         ...visitor_team,
-        logo: sportsDataIOTeam.find((team) => team?.Key === visitor_team.abbreviation)
+        logo: sportsDataIOTeam.find((team) => team?.Key === visitor_team?.abbreviation)
           ?.WikipediaLogoUrl,
       };
 
-      if (home_team.id === teamId) {
+      if (home_team_id === teamId) {
         return {
           ...game,
           ...{ win: home_team_score > visitor_team_score },
@@ -133,7 +130,7 @@ const getGamesByTeamAndSeason = async (
             visitor_team: visitorTeamWithLogo,
           },
         };
-      } else if (visitor_team.id === teamId) {
+      } else if (visitor_team_id === teamId) {
         return {
           ...game,
           ...{ win: home_team_score < visitor_team_score },
@@ -145,14 +142,16 @@ const getGamesByTeamAndSeason = async (
       }
     });
 
-    // Calculate stats for the current page only
-    const gamesPlayed = paginatedGamesWithData.length;
+    const gamesPlayed = mongoDBPlayerStatsGamesOnlyNoDups.length;
 
-    const ppg = getStatPerGameTotal({
-      gamesPlayed,
-      gameStats: gamePlayerStatsResults,
-      stat: 'pts',
-    });
+    const ppg =
+      allGamesFromBallDontLieWithData
+        .filter((game) => game.home_team.id === teamId || game.visitor_team.id === teamId)
+        .map((game) =>
+          game.home_team.id === teamId ? game.home_team_score : game.visitor_team_score,
+        )
+        .reduce((accumulator, currentValue) => accumulator + currentValue, 0) /
+      allGamesFromBallDontLieWithData.length;
 
     const rpg = getStatPerGameTotal({
       gamesPlayed,
@@ -187,11 +186,6 @@ const getGamesByTeamAndSeason = async (
       bpg,
       wins: totalWins,
       losses: totalLosses,
-      pagination: {
-        perPage,
-        totalGames: allGamesWithData.length,
-        nextCursor: paginatedGames.meta?.next_cursor,
-      },
     };
 
     const result = { data: gamesData };

@@ -1,4 +1,17 @@
-import getGameSummary from './game-summary/get';
 import addGameSummary from './game-summary/add';
+import addPlayerGameStats from './player-game-stats/add';
+import getGameSummary from './game-summary/get';
+import {
+  getPlayerGameStatsByGameId,
+  getPlayerGameStatsByTeamAndSeason,
+} from './player-game-stats/get';
+import getSeasonsFromGameData from './seasons/get';
 
-export { getGameSummary, addGameSummary };
+export {
+  addGameSummary,
+  addPlayerGameStats,
+  getGameSummary,
+  getPlayerGameStatsByGameId,
+  getPlayerGameStatsByTeamAndSeason,
+  getSeasonsFromGameData,
+};

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { ApiResponse, NBAStats } from '@balldontlie/sdk';
 import { useBallDontLieApi, useGameSummary, useSportsDataIOApi } from '@api';
 import { localCache } from '@cache';
 import {
@@ -8,6 +7,7 @@ import {
   getGameStatLeadersByTeam,
   getEnhancedStatLeaders,
 } from '@controllers/game/helpers';
+import { getPlayerGameStatsByGameId } from '@data/services';
 import { NBAGameWithTeamIds } from '@types';
 
 const ballDontLie = useBallDontLieApi();
@@ -21,26 +21,23 @@ const getGame = async (req: Request, res: Response) => {
       return cachedGame;
     }
 
-    const ballDontLieGameStats: ApiResponse<NBAStats[]> = await ballDontLie.nba.getStats({
-      game_ids: [gameId],
-      per_page: 50,
-    });
+    const [gameStatsFromMongoDB, sportsDataIOTeam, sportsDataIOPlayerHeadshots] = await Promise.all(
+      [
+        getPlayerGameStatsByGameId({ gameId }),
+        useSportsDataIOApi.getTeams(),
+        useSportsDataIOApi.getPlayerHeadshots(),
+      ],
+    );
 
-    const [sportsDataIOTeam, sportsDataIOPlayerHeadshots] = await Promise.all([
-      useSportsDataIOApi.getTeams(),
-      useSportsDataIOApi.getPlayerHeadshots(),
-    ]);
-
-    const gameStatsFull = ballDontLieGameStats.data;
-    const homeTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
-    const visitorTeamGame = gameStatsFull[0].game as NBAGameWithTeamIds;
+    const homeTeamGame = gameStatsFromMongoDB[0].game as NBAGameWithTeamIds;
+    const visitorTeamGame = gameStatsFromMongoDB[0].game as NBAGameWithTeamIds;
     const homeTeamID = homeTeamGame.home_team_id;
     const visitorTeamID = visitorTeamGame.visitor_team_id;
 
-    const homeTeamStats = getGameStatsById({ gameId: homeTeamID, gameStats: gameStatsFull });
+    const homeTeamStats = getGameStatsById({ gameId: homeTeamID, gameStats: gameStatsFromMongoDB });
     const visitorTeamStats = getGameStatsById({
       gameId: visitorTeamID,
-      gameStats: gameStatsFull,
+      gameStats: gameStatsFromMongoDB,
     });
     const homeTeamBoxScore = getGameBoxScore({ load: 'full', teamData: homeTeamStats });
     const homeTeamBoxScoreShort = getGameBoxScore({ load: 'lite', teamData: homeTeamStats });
@@ -97,14 +94,14 @@ const getGame = async (req: Request, res: Response) => {
     const gameSummaryGameData = {
       homeTeam: {
         abbrName: gameData.homeTeam.abbrName,
-        boxScoreData: gameData.homeTeam.boxScoreData,
+        boxScoreData: gameData.homeTeam.boxScoreDataShort,
         fullName: gameData.homeTeam.fullName,
         score: gameData.homeTeam.score,
         statLeaders: gameData.homeTeam.statLeaders,
       },
       visitorTeam: {
         abbrName: gameData.visitorTeam.abbrName,
-        boxScoreData: gameData.visitorTeam.boxScoreData,
+        boxScoreData: gameData.visitorTeam.boxScoreDataShort,
         fullName: gameData.visitorTeam.fullName,
         score: gameData.visitorTeam.score,
         statLeaders: gameData.visitorTeam.statLeaders,
