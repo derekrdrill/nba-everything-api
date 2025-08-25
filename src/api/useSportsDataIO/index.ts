@@ -1,10 +1,6 @@
 import axios from 'axios';
 import { localCache } from '@cache';
-import {
-  SportsDataIONBAPlayerHeadshot,
-  SportsDataIONBATeam,
-  SportsDataIONBATeamStadium,
-} from '@types';
+import { SportsDataIONBATeam, SportsDataIONBATeamStadium } from '@types';
 
 const getTeams = async (): Promise<SportsDataIONBATeam[]> => {
   const cachedTeams = localCache.get('sportsdataio_teams');
@@ -64,25 +60,4 @@ const getStadiums = async (): Promise<SportsDataIONBATeamStadium[]> => {
   return sportsDataIOTeamStadium;
 };
 
-const getPlayerHeadshots = async (): Promise<SportsDataIONBAPlayerHeadshot[]> => {
-  const cachedHeadshots = localCache.get('sportsdataio_headshots');
-  if (cachedHeadshots) {
-    return cachedHeadshots;
-  }
-
-  const sportsDataIOPlayerHeadshotOptions = {
-    method: 'GET',
-    url: `${process.env.SPORTS_DATA_IO_API_URL}/headshots/json/Headshots?key=${process.env.SPORTS_DATA_IO_ADVANCED_API_KEY}`,
-    params: { key: process.env.SPORTS_DATA_IO_API_KEY },
-  };
-
-  const sportsDataIOPlayerHeadshotRequest = await axios.request(sportsDataIOPlayerHeadshotOptions);
-  const sportsDataIOPlayerHeadshot =
-    sportsDataIOPlayerHeadshotRequest.data as SportsDataIONBAPlayerHeadshot[];
-
-  localCache.set('sportsdataio_headshots', sportsDataIOPlayerHeadshot, 24 * 60 * 60 * 1000);
-
-  return sportsDataIOPlayerHeadshot;
-};
-
-export { getPlayerHeadshots, getStadiums, getTeams };
+export { getStadiums, getTeams };

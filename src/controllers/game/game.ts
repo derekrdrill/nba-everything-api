@@ -7,7 +7,7 @@ import {
   getGameStatLeadersByTeam,
   getEnhancedStatLeaders,
 } from '@controllers/game/helpers';
-import { getPlayerGameStatsByGameId } from '@data/services';
+import { getPlayerGameStatsByGameId, getPlayerHeadshots } from '@data/services';
 import { NBAGameWithTeamIds } from '@types';
 
 const ballDontLie = useBallDontLieApi();
@@ -21,13 +21,11 @@ const getGame = async (req: Request, res: Response) => {
       return cachedGame;
     }
 
-    const [gameStatsFromMongoDB, sportsDataIOTeam, sportsDataIOPlayerHeadshots] = await Promise.all(
-      [
-        getPlayerGameStatsByGameId({ gameId }),
-        useSportsDataIOApi.getTeams(),
-        useSportsDataIOApi.getPlayerHeadshots(),
-      ],
-    );
+    const [gameStatsFromMongoDB, playerHeadshots, sportsDataIOTeam] = await Promise.all([
+      getPlayerGameStatsByGameId({ gameId }),
+      getPlayerHeadshots(),
+      useSportsDataIOApi.getTeams(),
+    ]);
 
     const homeTeamGame = gameStatsFromMongoDB[0].game as NBAGameWithTeamIds;
     const visitorTeamGame = gameStatsFromMongoDB[0].game as NBAGameWithTeamIds;
@@ -59,12 +57,12 @@ const getGame = async (req: Request, res: Response) => {
     )?.WikipediaLogoUrl;
 
     const homeTeamStatLeadersWithHeadshots = getEnhancedStatLeaders({
-      playerHeadshots: sportsDataIOPlayerHeadshots,
+      playerHeadshots,
       statLeaders: homeTeamStatLeaders,
     });
 
     const visitorTeamStatLeadersWithHeadshots = getEnhancedStatLeaders({
-      playerHeadshots: sportsDataIOPlayerHeadshots,
+      playerHeadshots,
       statLeaders: visitorTeamStatLeaders,
     });
 

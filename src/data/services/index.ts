@@ -5,6 +5,7 @@ import {
   getPlayerGameStatsByGameId,
   getPlayerGameStatsByTeamAndSeason,
 } from './player-game-stats/get';
+import getPlayerHeadshots from './player-headshots/get';
 import getSeasonsFromGameData from './seasons/get';
 
 export {
@@ -13,5 +14,6 @@ export {
   getGameSummary,
   getPlayerGameStatsByGameId,
   getPlayerGameStatsByTeamAndSeason,
+  getPlayerHeadshots,
   getSeasonsFromGameData,
 };
