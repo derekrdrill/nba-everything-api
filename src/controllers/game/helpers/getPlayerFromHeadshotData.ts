@@ -1,4 +1,4 @@
-import { SportsDataIONBAPlayerHeadshot } from '@types';
+import { NBAPlayerHeadshot } from '@types';
 import { NBAPlayer, NBATeam, NBAGame } from '@balldontlie/sdk';
 
 function normalizePlayerName(name: string): string {
@@ -14,7 +14,7 @@ const getPlayerFromHeadshotData = ({
   playerHeadshots,
   statLeader,
 }: {
-  playerHeadshots: SportsDataIONBAPlayerHeadshot[];
+  playerHeadshots: NBAPlayerHeadshot[];
   statLeader: {
     type: string;
     player: NBAPlayer;

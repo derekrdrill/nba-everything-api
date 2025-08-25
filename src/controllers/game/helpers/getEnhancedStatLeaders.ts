@@ -1,12 +1,12 @@
 import { NBAPlayer, NBAGame, NBATeam } from '@balldontlie/sdk';
-import { SportsDataIONBAPlayerHeadshot } from '@types';
+import { NBAPlayerHeadshot } from '@types';
 import { getPlayerFromHeadshotData } from '@controllers/game/helpers';
 
 const getEnhancedStatLeaders = ({
   playerHeadshots,
   statLeaders,
 }: {
-  playerHeadshots: SportsDataIONBAPlayerHeadshot[];
+  playerHeadshots: NBAPlayerHeadshot[];
   statLeaders: {
     type: string;
     player: NBAPlayer;
