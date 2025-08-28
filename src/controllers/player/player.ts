@@ -170,6 +170,7 @@ const getPlayerStatsByTeamAndSeason = async (
           Number(playerGameStat.min) > 0,
       );
       const gameStats = [playerStats];
+      const gamesPlayed = playerStats.length;
 
       const min = getStatPerGameTotal({
         gamesPlayed,
